@@ -1,4 +1,4 @@
-module github.com/zj2010/go-websocket
+module github.com/zhoujianstudio/go-websocket
 
 go 1.16
 
