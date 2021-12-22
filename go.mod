@@ -1,4 +1,4 @@
-module github.com/zhoujianstudio/go-websocket
+module github.com/loudbund/go-websocket
 
 go 1.16
 

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/zhoujianstudio/go-websocket/websocket_v1"
+	"github.com/loudbund/go-websocket/websocket_v1"
 	"html/template"
 	"log"
 	"net/http"
