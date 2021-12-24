@@ -108,9 +108,9 @@ func (Me *serverUser) waitHeartBeet(isLive chan bool) {
 func (Me *serverUser) Online() {
 
 	// 用户上线,将用户加入到onlineMap中
-	Me.Server.MapLock.Lock()
-	Me.Server.OnlineMap[Me.ClientId] = Me
-	Me.Server.MapLock.Unlock()
+	Me.Server.onlineMapLock.Lock()
+	Me.Server.onlineMap[Me.ClientId] = Me
+	Me.Server.onlineMapLock.Unlock()
 
 	// 2、事件发给server
 	Me.Server.ChanHookEvent <- &HookEvent{"online", Me, UDataSocket{}}
@@ -120,14 +120,14 @@ func (Me *serverUser) Online() {
 func (Me *serverUser) Offline() {
 
 	// 用户下线，将用户从onlineMap里移除
-	Me.Server.MapLock.Lock()
-	if _, ok := Me.Server.OnlineMap[Me.ClientId]; ok {
+	Me.Server.onlineMapLock.Lock()
+	if _, ok := Me.Server.onlineMap[Me.ClientId]; ok {
 		_ = Me.Conn.Close()                      // 释放资源 - 关闭socket链接
 		close(Me.C)                              // 释放资源 - 销毁用的资源
-		delete(Me.Server.OnlineMap, Me.ClientId) // 移除用户
-		fmt.Println(Me.Name, "退出成功", "当前在线", len(Me.Server.OnlineMap))
+		delete(Me.Server.onlineMap, Me.ClientId) // 移除用户
+		fmt.Println(Me.Name, "退出成功", "当前在线", len(Me.Server.onlineMap))
 	}
-	Me.Server.MapLock.Unlock()
+	Me.Server.onlineMapLock.Unlock()
 
 	// 2、事件发给server
 	Me.Server.ChanHookEvent <- &HookEvent{"offline", Me, UDataSocket{}}

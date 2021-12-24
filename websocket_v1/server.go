@@ -9,12 +9,12 @@ import (
 
 // 1、结构体 -------------------------------------------------------------------------
 type Server struct {
-	OnlineMap            map[string]*serverUser // 在线用户的列表
 	ClientHeartTimeOut   int                    // 客户端超时时间 默认60秒
 	OnHookEvent          func(Msg HookEvent)    // hook回调消息
 	ChanHookEvent        chan *HookEvent        // 所有消息，各个子连接传过来的
 	chanBroadCastMessage chan UDataSocket       // 消息广播的channel
-	MapLock              sync.RWMutex           // 同步锁
+	onlineMap            map[string]*serverUser // 在线用户的列表
+	onlineMapLock        sync.RWMutex           // 同步锁
 }
 
 //
@@ -31,7 +31,7 @@ type HookEvent struct {
 // 创建一个server的实例
 func NewServer(OnHookEvent func(Msg HookEvent)) *Server {
 	server := &Server{
-		OnlineMap:            make(map[string]*serverUser),
+		onlineMap:            make(map[string]*serverUser),
 		ClientHeartTimeOut:   60 * 3,
 		chanBroadCastMessage: make(chan UDataSocket),
 		ChanHookEvent:        make(chan *HookEvent),
@@ -48,15 +48,15 @@ func NewServer(OnHookEvent func(Msg HookEvent)) *Server {
 func (Me *Server) SendMsg(ClientId *string, Msg UDataSocket) error {
 	if ClientId == nil {
 		// 将msg发送给全部的在线User
-		Me.MapLock.Lock()
-		for _, cli := range Me.OnlineMap {
+		Me.onlineMapLock.Lock()
+		for _, cli := range Me.onlineMap {
 			cli.C <- Msg
 		}
-		Me.MapLock.Unlock()
+		Me.onlineMapLock.Unlock()
 
 		return nil
 	} else {
-		if user, ok := Me.OnlineMap[*ClientId]; ok {
+		if user, ok := Me.onlineMap[*ClientId]; ok {
 			return sendSocketMsg(user.Conn, Msg)
 		} else {
 			return errors.New("用户不在线")
@@ -75,7 +75,7 @@ func (Me *Server) NewUser(ws *websocket.Conn, S *Server) {
 	user.Online()
 
 	// 3、打印信息
-	fmt.Println("链接建立成功", user.ClientId, " 当前用户:", len(Me.OnlineMap))
+	fmt.Println("链接建立成功", user.ClientId, " 当前用户:", len(Me.onlineMap))
 
 	// 4、接收客户端消息
 	user.goListenClientMsg()
