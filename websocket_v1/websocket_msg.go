@@ -7,33 +7,33 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// 1、结构体 -------------------------------------------------------------------------
-
-// 传输数据上层结构体
+// 结构体1：传输数据上层结构体
 type UDataSocket struct {
 	CType   int    // 内容类型 1:客户端请求消息 2:服务端表接口消息 4:服务端表内容数据 200:服务端发送结束
 	Content []byte // 发送内容
 }
 
-// 传输数据底层结构体
+// 结构体2：传输数据底层结构体
 type unitDataSend struct {
 	SendFlag    int    // 消息最前面标记
 	CType       int    // 内容类型
 	ContentTran []byte // 发送的内容
 }
 
-// 本模块封装用结构体
+// 结构体3：本模块封装用结构体
 type socketMsg struct {
 	RevCache []byte // 收到数据缓存
 }
 
-// 2、全局变量 -------------------------------------------------------------------------
+// 全局变量1
 var sendFlag = 398359203 // 消息最前面标记
 
-// 3、初始化函数 -------------------------------------------------------------------------
+// 设置函数1： 密码设置，服务端和客户端需要约定好；不设置则使用默认的
+func SetSendFlag(Flag int) {
+	sendFlag = Flag
+}
 
-// 5、私有函数 -------------------------------------------------------------------------
-
+// 内部函数1：发送socket消息
 func sendSocketMsg(ws *websocket.Conn, Data UDataSocket) error {
 	// 1、拼凑要发送的数据
 	KeyBytesBuffer := bytes.NewBuffer([]byte{})
@@ -52,7 +52,7 @@ func sendSocketMsg(ws *websocket.Conn, Data UDataSocket) error {
 	return nil
 }
 
-// 消息处理：读取socket消息
+// 内部函数2：读取socket消息
 func (Me *socketMsg) getSocketMsg(ws *websocket.Conn, fSuccess func(data *UDataSocket) bool) error {
 	// 循环
 	for {
@@ -99,9 +99,7 @@ func (Me *socketMsg) getSocketMsg(ws *websocket.Conn, fSuccess func(data *UDataS
 	return nil
 }
 
-// ////////////////////////////////////////////////////////////////////////////////////////////
-
-// 数据读取：从socket里读取指定长度
+// 内部函数3：读取指定长度数据
 func (Me *socketMsg) readSocketSizeData(ws *websocket.Conn, length int) ([]byte, error) {
 	// 1、想读取0个字节，就拼凑一个给他
 	if length <= 0 {
@@ -129,7 +127,7 @@ func (Me *socketMsg) readSocketSizeData(ws *websocket.Conn, length int) ([]byte,
 	}
 }
 
-// 数据读取：从缓存里读取指定长度数据
+// 内部函数4：从缓存里读取指定长度数据
 func (Me *socketMsg) getFromCache(length int) ([]byte, error) {
 	// 缓冲池的数据够了，就返回
 	if len(Me.RevCache) >= length {
