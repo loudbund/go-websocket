@@ -41,6 +41,7 @@ func onHookEvent(Event websocket_v1.HookEvent) {
 	// 事件处理在此处 ///////////////////////////////////////////////////////////////
 	switch Event.EventType {
 	case "message": // 1、消息事件
+		fmt.Println(Event.Message.CType, string(Event.Message.Content))
 	case "offline": // 2、下线事件
 	case "online": // 3、上线消息
 	}

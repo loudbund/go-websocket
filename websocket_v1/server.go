@@ -57,7 +57,11 @@ func (Me *Server) SendMsg(ClientId *string, Msg UDataSocket) error {
 		return nil
 	} else {
 		if user, ok := Me.onlineMap[*ClientId]; ok {
-			return sendSocketMsg(user.Conn, Msg)
+			if err := sendSocketMsg(user.Conn, Msg); err != nil {
+				user.Offline()
+				return err
+			}
+			return nil
 		} else {
 			return errors.New("用户不在线")
 		}
