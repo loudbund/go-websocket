@@ -56,7 +56,11 @@ func (Me *Server) SendMsg(ClientId *string, Msg UDataSocket) error {
 
 		return nil
 	} else {
-		if user, ok := Me.onlineMap[*ClientId]; ok {
+		Me.onlineMapLock.Lock()
+		user, ok := Me.onlineMap[*ClientId]
+		Me.onlineMapLock.Unlock()
+
+		if ok {
 			if err := sendSocketMsg(user.Conn, Msg); err != nil {
 				user.Offline()
 				return err
