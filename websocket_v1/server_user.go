@@ -29,12 +29,13 @@ type serverUser struct {
 // 创建一个用户的API
 func newUser(conn *websocket.Conn, server *Server) *serverUser {
 	user := &serverUser{
-		ClientId: utilUuidShort(),
-		Conn:     conn,
-		Name:     conn.RemoteAddr().String(),
-		Addr:     conn.RemoteAddr().String(),
-		Server:   server,
-		C:        make(chan UDataSocket, 10),
+		ClientId:  utilUuidShort(),
+		Conn:      conn,
+		Name:      conn.RemoteAddr().String(),
+		Addr:      conn.RemoteAddr().String(),
+		Server:    server,
+		C:         make(chan UDataSocket, 10),
+		socketMsg: socketMsg{SendFlag: server.SendFlag},
 	}
 	return user
 }
@@ -55,7 +56,7 @@ func (Me *serverUser) goListenClientMsg() {
 			// 收到问候的消息
 			if msg.CType == 7 {
 				fmt.Println(Me.ClientId, msg.CType, string(msg.Content))
-				_ = sendSocketMsg(Me.Conn, UDataSocket{8, []byte("hello test msg from server")})
+				_ = Me.sendSocketMsg(Me.Conn, UDataSocket{8, []byte("hello test msg from server")})
 			}
 
 			// 3、消息发给主进程
@@ -79,7 +80,7 @@ func (Me *serverUser) waitHeartBeet(isLive chan bool) {
 		select {
 		case msg := <-Me.C:
 			if !reflect.DeepEqual(msg, reflect.Zero(reflect.TypeOf(msg)).Interface()) {
-				if err := sendSocketMsg(Me.Conn, msg); err != nil {
+				if err := Me.sendSocketMsg(Me.Conn, msg); err != nil {
 					Me.Offline()
 					return // 退出socket协程 // fmt.Println("消息发送失败，用户进程阻塞终止，退出用户协程")
 				}

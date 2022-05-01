@@ -23,22 +23,15 @@ type unitDataSend struct {
 // 结构体3：本模块封装用结构体
 type socketMsg struct {
 	RevCache []byte // 收到数据缓存
-}
-
-// 全局变量1
-var sendFlag = 398359203 // 消息最前面标记
-
-// 设置函数1： 密码设置，服务端和客户端需要约定好；不设置则使用默认的
-func SetSendFlag(Flag int) {
-	sendFlag = Flag
+	SendFlag int    // 消息最前面标记
 }
 
 // 内部函数1：发送socket消息
-func sendSocketMsg(ws *websocket.Conn, Data UDataSocket) error {
+func (Me *socketMsg) sendSocketMsg(ws *websocket.Conn, Data UDataSocket) error {
 	// 1、拼凑要发送的数据
 	KeyBytesBuffer := bytes.NewBuffer([]byte{})
 	if true {
-		KeyBytesBuffer.Write(utilInt2Bytes(sendFlag))
+		KeyBytesBuffer.Write(utilInt2Bytes(Me.SendFlag))
 		KeyBytesBuffer.Write(utilInt2Bytes(Data.CType))
 		KeyBytesBuffer.Write(utilInt2Bytes(len(Data.Content)))
 		KeyBytesBuffer.Write(Data.Content)
@@ -66,7 +59,7 @@ func (Me *socketMsg) getSocketMsg(ws *websocket.Conn, fSuccess func(data *UDataS
 		KeyRevSendFlag := utilBytes2Int(KeyBuffHeader[0:4])
 		KeyRevCType := utilBytes2Int(KeyBuffHeader[4:8])
 		if true {
-			if KeyRevSendFlag != sendFlag {
+			if KeyRevSendFlag != Me.SendFlag {
 				log.Error("传输码校验失败")
 				return errors.New("传输码校验失败")
 			}

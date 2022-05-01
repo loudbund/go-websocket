@@ -15,6 +15,7 @@ type Server struct {
 	chanBroadCastMessage chan UDataSocket       // 消息广播的channel
 	onlineMap            map[string]*serverUser // 在线用户的列表
 	onlineMapLock        sync.RWMutex           // 同步锁
+	SendFlag             int                    // socket验证标记
 }
 
 //
@@ -44,6 +45,14 @@ func NewServer(OnHookEvent func(Msg HookEvent)) *Server {
 	return server
 }
 
+// 对外函数2：连接服务器
+func (Me *Server) Set(opt string, value interface{}) *Server {
+	if opt == "SendFlag" {
+		Me.SendFlag = value.(int)
+	}
+	return Me
+}
+
 // 消息发送
 func (Me *Server) SendMsg(ClientId *string, Msg UDataSocket) error {
 	if ClientId == nil {
@@ -61,7 +70,7 @@ func (Me *Server) SendMsg(ClientId *string, Msg UDataSocket) error {
 		Me.onlineMapLock.Unlock()
 
 		if ok {
-			if err := sendSocketMsg(user.Conn, Msg); err != nil {
+			if err := user.sendSocketMsg(user.Conn, Msg); err != nil {
 				user.Offline()
 				return err
 			}

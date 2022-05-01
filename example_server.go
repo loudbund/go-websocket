@@ -7,59 +7,45 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-// 1、结构体 -------------------------------------------------------------------------
-
-// 2、全局变量 -------------------------------------------------------------------------
-
-var upgrader = websocket.Upgrader{
-	EnableCompression: true,
-	HandshakeTimeout:  5 * time.Second,
-	// CheckOrigin: 处理跨域问题，线上环境慎用
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-// 3、初始化函数 -------------------------------------------------------------------------
+// 全局变量
 var (
-	Server *websocket_v1.Server
+	upgrader = websocket.Upgrader{
+		EnableCompression: true,
+		HandshakeTimeout:  5 * time.Second,
+		// CheckOrigin: 处理跨域问题，线上环境慎用
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+	Server    *websocket_v1.Server
+	onlineNum = 0
 )
 
-// 4、开放的函数 -------------------------------------------------------------------------
-
-// 5、内部函数 -------------------------------------------------------------------------
-
-func home(w http.ResponseWriter, r *http.Request) {
-	_ = homeTemplate.Execute(w, "ws://"+r.Host+"/echo")
-}
-
-// 处理数据,多线程转单线程处理
-func onHookEvent(Event websocket_v1.HookEvent) {
+// websocket事件
+func socketOnHookEvent(Event websocket_v1.HookEvent) {
 	// 事件处理在此处 ///////////////////////////////////////////////////////////////
 	switch Event.EventType {
 	case "message": // 1、消息事件
 		fmt.Println(Event.Message.CType, string(Event.Message.Content))
 	case "offline": // 2、下线事件
+		onlineNum--
 	case "online": // 3、上线消息
+		onlineNum++
 	}
 	// ////////////////////////////////////////////////////////////////////////////
 }
 
-// 发送数据给所有客户端
-func goTestSendMsg() {
-	for {
-		_ = Server.SendMsg(nil, websocket_v1.UDataSocket{
-			CType:   1000,
-			Content: []byte("hello"),
-		})
-		time.Sleep(time.Second)
-	}
+// http页面模拟客户端
+func httpHome(w http.ResponseWriter, r *http.Request) {
+	_ = homeTemplate.Execute(w, "ws://"+r.Host+"/echo")
 }
 
-func echo(w http.ResponseWriter, r *http.Request) {
+// http响应websocket连接
+func httpEcho(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("upgrade:", err)
@@ -68,21 +54,32 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	go Server.NewUser(c, Server)
 }
 
-// 6、主函数 -------------------------------------------------------------------------
+// 主函数
 func main() {
 	addr := "0.0.0.0:3020"
 	Server = websocket_v1.NewServer(func(Event websocket_v1.HookEvent) {
-		onHookEvent(Event)
-	})
+		socketOnHookEvent(Event)
+	}).Set("SendFlag", 398359203)
 
 	// 演示用: 循环发消息
-	go goTestSendMsg()
+	go testSendMsg()
 
 	// 开始监听：
-	http.HandleFunc("/websocket/", echo)
-	http.HandleFunc("/", home)
+	http.HandleFunc("/websocket/", httpEcho)
+	http.HandleFunc("/", httpHome)
 	fmt.Println("websocket开始监听:" + addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+// 测试发送数据给所有客户端
+func testSendMsg() {
+	for {
+		_ = Server.SendMsg(nil, websocket_v1.UDataSocket{
+			CType:   1000,
+			Content: []byte("hello, [" + time.Now().Format("2006-01-02 15:04:05") + "] clients number:" + strconv.Itoa(onlineNum)),
+		})
+		time.Sleep(time.Second)
+	}
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`
